@@ -1,0 +1,49 @@
+start_date: "2015-01-01"
+end_date: "2025-12-31"
+
+country: "US"
+security_type: "ETF"
+
+exclude_leveraged: true
+exclude_inverse: true
+
+min_history_years: 3
+max_missing_data_pct: 0.05
+
+active_etf:
+  # Remove ETFs whose last price is more than this many days before end_date.
+  # 365 allows for ETFs that may have recently become inactive or delisted.
+  max_days_since_last_price: 365
+
+liquidity:
+  method: "median_dollar_volume"
+  min_median_dollar_volume: null
+  percentile_cutoff: 0.10
+  # Number of calendar days to look back for the "recent" liquidity window.
+  recent_lookback_days: 365
+
+zero_volume:
+  # Remove ETFs where this fraction of trading days had zero reported volume.
+  max_zero_volume_ratio: 0.10
+
+stale_price:
+  max_zero_return_ratio: 0.30
+  max_consecutive_zero_return_days: 10
+
+extreme_return:
+  # Flag any single-day absolute return above this threshold as extreme.
+  single_day_threshold: 0.50
+  # If set, remove ETFs where the fraction of extreme-return days exceeds this.
+  # null = flag only, do not auto-remove.
+  max_extreme_ratio: null
+
+wrds:
+  preferred_etf_library: etfg
+  preferred_etf_master_table: industry
+  preferred_price_library: crsp
+  preferred_price_table: dsf
+
+output:
+  save_raw: true
+  save_interim: true
+  save_processed: true
