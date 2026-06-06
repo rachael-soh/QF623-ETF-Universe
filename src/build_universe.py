@@ -17,6 +17,7 @@ from src.load_etf_prices import load_etf_prices
 from src.filters import apply_master_filters, apply_quality_filters
 from src.screening_metrics import calculate_screening_metrics
 from src.report import generate_universe_report
+from src.compute_returns import compute_returns, pivot_returns
 
 
 def load_config(config_path: str) -> dict:
@@ -68,7 +69,18 @@ def run_pipeline(config_path: str) -> None:
     if save_interim:
         _save(excluded_df, "data/interim/excluded_etfs_with_reasons.csv")
 
-    print("\n=== Step 7: Generate report ===")
+    print("\n=== Step 7: Compute simple and log returns ===")
+    returns_df = compute_returns(price_df)
+    simple_returns_df = pivot_returns(returns_df, "simple_return").reset_index()
+    log_returns_df = pivot_returns(returns_df, "log_return").reset_index()
+
+    if save_interim:
+        _save(returns_df, "data/interim/returns_df.csv")
+    _save(simple_returns_df, "data/processed/simple_returns.csv")
+    _save(log_returns_df, "data/processed/log_returns.csv")
+    
+
+    print("\n=== Step 8: Generate report ===")
     generate_universe_report(final_df, excluded_df, config, "output/universe_screening_report.md")
 
     print(f"\nDone. Clean master universe: {len(final_df):,} ETFs.")

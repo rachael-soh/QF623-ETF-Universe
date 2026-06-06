@@ -8,26 +8,41 @@ import pandas as pd
 # etfg.industry column → canonical name
 ETFG_INDUSTRY_RENAME = {
     "composite_ticker": "ticker",
-    "description":      "fund_name",
+    "description": "fund_name",
     "listing_exchange": "exchange",
-    "asset_class":      "asset_class",
-    "category":         "category",
-    "inception_date":   "inception_date",
-    "issuer":           "issuer",          # kept as extra info
-    "is_levered":       "is_leveraged",    # 0/1 numeric in this table
-    "is_etn":           "is_etn",          # we will drop ETNs
-    "is_active":        "is_active",
-    "aum":              "aum",
+    "asset_class": "asset_class",
+    "category": "category",
+    "inception_date": "inception_date",
+    "issuer": "issuer",  # kept as extra info
+    "is_levered": "is_leveraged",  # 0/1 numeric in this table
+    "is_etn": "is_etn",  # we will drop ETNs
+    "is_active": "is_active",
+    "aum": "aum",
     "avg_daily_trading_volume": "avg_daily_trading_volume",
-    "region":           "region",          # used to help infer US-listed
+    "region": "region",  # used to help infer US-listed
 }
 
 CANONICAL = [
-    "ticker", "fund_name", "exchange", "country", "security_type",
-    "asset_class", "category", "inception_date", "cusip", "permno",
-    "raw_source", "is_leveraged", "is_inverse",
+    "ticker",
+    "fund_name",
+    "exchange",
+    "country",
+    "security_type",
+    "asset_class",
+    "category",
+    "inception_date",
+    "cusip",
+    "permno",
+    "raw_source",
+    "is_leveraged",
+    "is_inverse",
     # extra useful columns
-    "issuer", "is_etn", "is_active", "aum", "avg_daily_trading_volume", "region",
+    "issuer",
+    "is_etn",
+    "is_active",
+    "aum",
+    "avg_daily_trading_volume",
+    "region",
     "product_structure",
 ]
 
@@ -109,11 +124,27 @@ def _clean_master(raw_df: pd.DataFrame, library_hint: str = "") -> pd.DataFrame:
         if pd.notna(row.get("is_etn")) and int(row.get("is_etn", 0)) == 1:
             return "ETN"
         name = str(row.get("fund_name", "")).upper()
-        if any(kw in name for kw in ["COMMODITY TRUST", "GOLD TRUST", "SILVER TRUST",
-                                      "OIL FUND", "NATURAL GAS FUND"]):
+        if any(
+            kw in name
+            for kw in [
+                "COMMODITY TRUST",
+                "GOLD TRUST",
+                "SILVER TRUST",
+                "OIL FUND",
+                "NATURAL GAS FUND",
+            ]
+        ):
             return "Commodity Trust"
-        if any(kw in name for kw in ["CURRENCY", "EURO TRUST", "YEN TRUST",
-                                      "STERLING TRUST", "CURRENCY SHARES"]):
+        if any(
+            kw in name
+            for kw in [
+                "CURRENCY",
+                "EURO TRUST",
+                "YEN TRUST",
+                "STERLING TRUST",
+                "CURRENCY SHARES",
+            ]
+        ):
             return "Currency Trust"
         if any(kw in name for kw in ["FUTURES", "ROLL SELECT", "CONTANGO"]):
             return "Futures-Based ETF"
@@ -126,6 +157,7 @@ def _clean_master(raw_df: pd.DataFrame, library_hint: str = "") -> pd.DataFrame:
     # country: ETF Global uses listing_exchange for US detection; set to US
     # for exchanges that are clearly US-based.
     us_exchange_fragments = ["nyse", "nasdaq", "cboe", "bats", "nyse arca"]
+
     def _infer_country(row):
         exch = str(row.get("exchange", "")).lower()
         if any(frag in exch for frag in us_exchange_fragments):
@@ -148,7 +180,9 @@ def _clean_master(raw_df: pd.DataFrame, library_hint: str = "") -> pd.DataFrame:
 
     # ── is_leveraged: convert 0/1 numeric to bool ────────────────────────────
     if "is_leveraged" in df.columns:
-        df["is_leveraged"] = pd.to_numeric(df["is_leveraged"], errors="coerce").fillna(0).astype(bool)
+        df["is_leveraged"] = (
+            pd.to_numeric(df["is_leveraged"], errors="coerce").fillna(0).astype(bool)
+        )
 
     # ── String cleanup ────────────────────────────────────────────────────────
     for col in ["ticker", "fund_name", "exchange", "country"]:

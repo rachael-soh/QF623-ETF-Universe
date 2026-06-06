@@ -9,8 +9,8 @@ def _df_to_md(df: pd.DataFrame) -> str:
     """Convert a DataFrame to a Markdown table without requiring tabulate."""
     cols = list(df.columns)
     header = "| " + " | ".join(str(c) for c in cols) + " |"
-    sep    = "| " + " | ".join("---" for _ in cols) + " |"
-    rows   = [
+    sep = "| " + " | ".join("---" for _ in cols) + " |"
+    rows = [
         "| " + " | ".join(str(v) for v in row) + " |"
         for row in df.itertuples(index=False)
     ]
@@ -30,45 +30,75 @@ def generate_universe_report(
     all_df = pd.concat([final_df, excluded_df], ignore_index=True)
 
     def _count_reason(reason_fragment: str) -> int:
-        return int(excluded_df["remove_reason"].str.contains(reason_fragment, na=False).sum())
+        return int(
+            excluded_df["remove_reason"].str.contains(reason_fragment, na=False).sum()
+        )
 
-    liq_cutoff = final_df["liquidity_cutoff_used"].iloc[0] if "liquidity_cutoff_used" in final_df.columns and len(final_df) > 0 else "N/A"
+    liq_cutoff = (
+        final_df["liquidity_cutoff_used"].iloc[0]
+        if "liquidity_cutoff_used" in final_df.columns and len(final_df) > 0
+        else "N/A"
+    )
 
     lines = []
     lines.append("# ETF Universe Screening Report\n")
-    lines.append(f"**Date range:** {config.get('start_date')} – {config.get('end_date')}\n")
+    lines.append(
+        f"**Date range:** {config.get('start_date')} – {config.get('end_date')}\n"
+    )
 
     lines.append("## Funnel Summary\n")
     lines.append(f"| Step | Count |")
     lines.append(f"|------|-------|")
     lines.append(f"| Raw ETFs pulled from WRDS | {len(all_df):,} |")
 
-    after_us_etf = len(all_df) - _count_reason("Not US-listed") - _count_reason("Not ETF")
+    after_us_etf = (
+        len(all_df) - _count_reason("Not US-listed") - _count_reason("Not ETF")
+    )
     lines.append(f"| After US-listed + ETF type filter | {after_us_etf:,} |")
     lines.append(f"| Removed: Not US-listed | {_count_reason('Not US-listed'):,} |")
     lines.append(f"| Removed: Not ETF | {_count_reason('Not ETF'):,} |")
     lines.append(f"| Removed: Leveraged ETF | {_count_reason('Leveraged ETF'):,} |")
     lines.append(f"| Removed: Inverse ETF | {_count_reason('Inverse ETF'):,} |")
-    lines.append(f"| Removed: Insufficient price history | {_count_reason('Insufficient price history'):,} |")
-    lines.append(f"| Removed: Too much missing data | {_count_reason('Too much missing data'):,} |")
-    lines.append(f"| Removed: Below liquidity cutoff | {_count_reason('Below liquidity cutoff'):,} |")
-    lines.append(f"| Removed: Stale pricing pattern | {_count_reason('Stale pricing pattern'):,} |")
+    lines.append(
+        f"| Removed: Insufficient price history | {_count_reason('Insufficient price history'):,} |"
+    )
+    lines.append(
+        f"| Removed: Too much missing data | {_count_reason('Too much missing data'):,} |"
+    )
+    lines.append(
+        f"| Removed: Below liquidity cutoff | {_count_reason('Below liquidity cutoff'):,} |"
+    )
+    lines.append(
+        f"| Removed: Stale pricing pattern | {_count_reason('Stale pricing pattern'):,} |"
+    )
     lines.append(f"| **Final clean master universe** | **{len(final_df):,}** |")
     lines.append("")
 
     lines.append("## Screening Parameters\n")
     lines.append(f"- Minimum history: {config.get('min_history_years')} years")
-    lines.append(f"- Max missing data: {config.get('max_missing_data_pct', 0.05) * 100:.1f}%")
-    lines.append(f"- Liquidity cutoff (median dollar volume): {liq_cutoff:,.0f}" if isinstance(liq_cutoff, (int, float)) else f"- Liquidity cutoff: {liq_cutoff}")
+    lines.append(
+        f"- Max missing data: {config.get('max_missing_data_pct', 0.05) * 100:.1f}%"
+    )
+    lines.append(
+        f"- Liquidity cutoff (median dollar volume): {liq_cutoff:,.0f}"
+        if isinstance(liq_cutoff, (int, float))
+        else f"- Liquidity cutoff: {liq_cutoff}"
+    )
     stale_cfg = config.get("stale_price", {})
-    lines.append(f"- Max zero-return ratio: {stale_cfg.get('max_zero_return_ratio', 0.30):.0%}")
-    lines.append(f"- Max consecutive zero-return days: {stale_cfg.get('max_consecutive_zero_return_days', 10)}")
+    lines.append(
+        f"- Max zero-return ratio: {stale_cfg.get('max_zero_return_ratio', 0.30):.0%}"
+    )
+    lines.append(
+        f"- Max consecutive zero-return days: {stale_cfg.get('max_consecutive_zero_return_days', 10)}"
+    )
     lines.append("")
 
     if "median_dollar_volume" in final_df.columns:
         lines.append("## Top 20 ETFs by Median Dollar Volume\n")
         top20 = final_df.nlargest(20, "median_dollar_volume")[
-            ["ticker"] + (["fund_name"] if "fund_name" in final_df.columns else []) + ["median_dollar_volume"]
+            ["ticker"]
+            + (["fund_name"] if "fund_name" in final_df.columns else [])
+            + ["median_dollar_volume"]
         ]
         lines.append(_df_to_md(top20))
         lines.append("")
