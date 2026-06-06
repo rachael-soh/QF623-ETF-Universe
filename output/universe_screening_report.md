@@ -6,15 +6,15 @@
 
 | Step | Count |
 |------|-------|
-| Raw ETFs pulled from WRDS | 5,460 |
-| After US-listed + ETF type filter | 5,460 |
+| Raw ETFs pulled from WRDS | 5,546 |
+| After US-listed + ETF type filter | 5,546 |
 | Removed: Not US-listed | 0 |
 | Removed: Not ETF | 0 |
 | Removed: Leveraged ETF | 0 |
 | Removed: Inverse ETF | 0 |
-| Removed: Insufficient price history | 1,858 |
+| Removed: Insufficient price history | 1,844 |
 | Removed: Too much missing data | 100 |
-| Removed: Below liquidity cutoff | 1,421 |
+| Removed: Below liquidity cutoff | 1,411 |
 | Removed: Stale pricing pattern | 10 |
 | **Final clean master universe** | **1,630** |
 
@@ -22,7 +22,7 @@
 
 - Minimum history: 3 years
 - Max missing data: 5.0%
-- Liquidity cutoff (median dollar volume): 72,414
+- Liquidity cutoff (median dollar volume): 73,087
 - Max zero-return ratio: 30%
 - Max consecutive zero-return days: 10
 

@@ -46,7 +46,9 @@ def load_etf_prices(db, tickers: list[str], config: dict) -> pd.DataFrame:
     # ── Step 1: ticker → permno via crsp.dsenames ────────────────────────────
     permno_map = _resolve_permnos(db, tickers, start_date, end_date)
     if permno_map.empty:
-        print("  [WARN] No permnos resolved for given tickers. Price data will be empty.")
+        print(
+            "  [WARN] No permnos resolved for given tickers. Price data will be empty."
+        )
         return _empty_price_df()
 
     permnos = permno_map["permno"].unique().tolist()
@@ -84,7 +86,9 @@ def load_etf_prices(db, tickers: list[str], config: dict) -> pd.DataFrame:
     return df
 
 
-def _resolve_permnos(db, tickers: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+def _resolve_permnos(
+    db, tickers: list[str], start_date: str, end_date: str
+) -> pd.DataFrame:
     """
     Return a DataFrame with columns [ticker, permno] by querying crsp.dsenames.
     Uses the dsenames date range to find the permno(s) active during our window.
@@ -139,8 +143,12 @@ def _resolve_permnos(db, tickers: list[str], start_date: str, end_date: str) -> 
             dup_df = pd.concat(resolved_frames, ignore_index=True)
             # Sort: NULL nameendt (still active) first, then most recent date
             dup_df["nameendt"] = pd.to_datetime(dup_df["nameendt"], errors="coerce")
-            dup_df = dup_df.sort_values("nameendt", ascending=False, na_position="first")
-            dup_resolved = dup_df.drop_duplicates("ticker", keep="first")[["ticker", "permno"]]
+            dup_df = dup_df.sort_values(
+                "nameendt", ascending=False, na_position="first"
+            )
+            dup_resolved = dup_df.drop_duplicates("ticker", keep="first")[
+                ["ticker", "permno"]
+            ]
             # Replace the duplicated rows in result
             result = result[~result["ticker"].isin(dup_tickers)]
             result = pd.concat([result, dup_resolved], ignore_index=True)
@@ -157,8 +165,11 @@ def _clean_prices(raw_df: pd.DataFrame, permno_map: pd.DataFrame) -> pd.DataFram
     df.columns = [c.strip().lower() for c in df.columns]
 
     # Join ticker onto price data
-    df = df.merge(permno_map[["permno", "ticker"]].drop_duplicates("permno"),
-                  on="permno", how="left")
+    df = df.merge(
+        permno_map[["permno", "ticker"]].drop_duplicates("permno"),
+        on="permno",
+        how="left",
+    )
 
     # CRSP prc is negative when it is a bid/ask midpoint — take absolute value
     df["prc"] = pd.to_numeric(df["prc"], errors="coerce").abs()
@@ -189,9 +200,31 @@ def _clean_prices(raw_df: pd.DataFrame, permno_map: pd.DataFrame) -> pd.DataFram
     df = df.dropna(subset=["date", "ticker"])
     df = df.reset_index(drop=True)
 
-    print(f"  Price data cleaned: {len(df):,} rows, {df['ticker'].nunique():,} tickers.")
-    return df[["date", "ticker", "price", "adjusted_price", "return", "volume", "dollar_volume"]]
+    print(
+        f"  Price data cleaned: {len(df):,} rows, {df['ticker'].nunique():,} tickers."
+    )
+    return df[
+        [
+            "date",
+            "ticker",
+            "price",
+            "adjusted_price",
+            "return",
+            "volume",
+            "dollar_volume",
+        ]
+    ]
 
 
 def _empty_price_df() -> pd.DataFrame:
-    return pd.DataFrame(columns=["date", "ticker", "price", "adjusted_price", "return", "volume", "dollar_volume"])
+    return pd.DataFrame(
+        columns=[
+            "date",
+            "ticker",
+            "price",
+            "adjusted_price",
+            "return",
+            "volume",
+            "dollar_volume",
+        ]
+    )

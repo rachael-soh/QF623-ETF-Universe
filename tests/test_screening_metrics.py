@@ -18,15 +18,18 @@ CONFIG = {
 def _make_prices(ticker, dates, returns, dollar_volumes=None):
     n = len(dates)
     dv = dollar_volumes if dollar_volumes is not None else [1_000_000] * n
-    return pd.DataFrame({
-        "ticker": ticker,
-        "date": pd.to_datetime(dates),
-        "return": returns,
-        "dollar_volume": dv,
-    })
+    return pd.DataFrame(
+        {
+            "ticker": ticker,
+            "date": pd.to_datetime(dates),
+            "return": returns,
+            "dollar_volume": dv,
+        }
+    )
 
 
 # ── Annualised volatility ──────────────────────────────────────────────────
+
 
 def test_annualized_volatility():
     dates = pd.bdate_range("2020-01-02", periods=252)
@@ -40,11 +43,14 @@ def test_annualized_volatility():
     returns2 = [0.01, -0.01] * 126
     df2 = _make_prices("SPY2", dates2, returns2)
     metrics2 = calculate_screening_metrics(df2, CONFIG)
-    ann_vol = metrics2.loc[metrics2["ticker"] == "SPY2", "annualized_volatility"].iloc[0]
+    ann_vol = metrics2.loc[metrics2["ticker"] == "SPY2", "annualized_volatility"].iloc[
+        0
+    ]
     assert ann_vol == pytest.approx(pd.Series(returns2).std() * np.sqrt(252), rel=1e-4)
 
 
 # ── Missing data percentage ────────────────────────────────────────────────
+
 
 def test_missing_data_pct_full_history():
     dates = pd.bdate_range("2020-01-02", "2020-12-31")
@@ -68,6 +74,7 @@ def test_missing_data_pct_partial_history():
 
 # ── Zero-return ratio ──────────────────────────────────────────────────────
 
+
 def test_zero_return_ratio():
     dates = pd.bdate_range("2020-01-02", periods=100)
     returns = [0.0] * 40 + [0.01] * 60
@@ -78,6 +85,7 @@ def test_zero_return_ratio():
 
 
 # ── Max consecutive zero-return days ─────────────────────────────────────
+
 
 def test_max_consecutive_zero_return_days():
     mask = pd.Series([False, True, True, True, False, True, False])

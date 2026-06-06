@@ -1,6 +1,6 @@
 import wrds
 
-WRDS_USERNAME = "sohrac"
+WRDS_USERNAME = "ngchunyue"
 
 
 def get_wrds_connection() -> wrds.Connection:

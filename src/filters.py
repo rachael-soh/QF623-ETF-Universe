@@ -3,13 +3,25 @@
 import pandas as pd
 
 LEVERAGED_KEYWORDS = [
-    "2X", "3X", "ULTRA", "ULTRAPRO", "LEVERAGED",
-    "DAILY 2X", "DAILY 3X", "BULL 2X", "BULL 3X",
+    "2X",
+    "3X",
+    "ULTRA",
+    "ULTRAPRO",
+    "LEVERAGED",
+    "DAILY 2X",
+    "DAILY 3X",
+    "BULL 2X",
+    "BULL 3X",
 ]
 
 INVERSE_KEYWORDS = [
-    "INVERSE", "SHORT", "ULTRASHORT", "BEAR",
-    "BEAR 1X", "BEAR 2X", "BEAR 3X",
+    "INVERSE",
+    "SHORT",
+    "ULTRASHORT",
+    "BEAR",
+    "BEAR 1X",
+    "BEAR 2X",
+    "BEAR 3X",
 ]
 
 
@@ -69,12 +81,20 @@ def apply_master_filters(master_df: pd.DataFrame, config: dict) -> pd.DataFrame:
     def _lev_flag(row):
         if has_lev_flag and pd.notna(row.get("is_leveraged")):
             return bool(row["is_leveraged"]), "official_flag"
-        return detect_leveraged(str(row.get("fund_name", "")), str(row.get("category", ""))), "keyword_fallback"
+        return (
+            detect_leveraged(
+                str(row.get("fund_name", "")), str(row.get("category", ""))
+            ),
+            "keyword_fallback",
+        )
 
     def _inv_flag(row):
         if has_inv_flag and pd.notna(row.get("is_inverse")):
             return bool(row["is_inverse"]), "official_flag"
-        return detect_inverse(str(row.get("fund_name", "")), str(row.get("category", ""))), "keyword_fallback"
+        return (
+            detect_inverse(str(row.get("fund_name", "")), str(row.get("category", ""))),
+            "keyword_fallback",
+        )
 
     lev_results = df.apply(_lev_flag, axis=1)
     inv_results = df.apply(_inv_flag, axis=1)
@@ -92,7 +112,9 @@ def apply_master_filters(master_df: pd.DataFrame, config: dict) -> pd.DataFrame:
     keep &= df.apply(is_etf, axis=1)
 
     result = df[keep].copy().reset_index(drop=True)
-    print(f"  Master filters: {len(master_df):,} → {len(result):,} ETFs (removed {len(master_df) - len(result):,})")
+    print(
+        f"  Master filters: {len(master_df):,} → {len(result):,} ETFs (removed {len(master_df) - len(result):,})"
+    )
     return result
 
 
@@ -116,22 +138,26 @@ def apply_quality_filters(
     pct_cutoff = liq_cfg.get("percentile_cutoff", 0.10)
 
     # ── Pull all thresholds from config ──────────────────────────────────────
-    active_cfg   = config.get("active_etf", {})
-    zvol_cfg     = config.get("zero_volume", {})
-    exret_cfg    = config.get("extreme_return", {})
+    active_cfg = config.get("active_etf", {})
+    zvol_cfg = config.get("zero_volume", {})
+    exret_cfg = config.get("extreme_return", {})
 
-    max_days_inactive  = active_cfg.get("max_days_since_last_price", 365)
-    max_zvol_ratio     = zvol_cfg.get("max_zero_volume_ratio", 0.10)
-    exret_threshold    = exret_cfg.get("single_day_threshold", 0.50)
-    max_exret_ratio    = exret_cfg.get("max_extreme_ratio", None)
+    max_days_inactive = active_cfg.get("max_days_since_last_price", 365)
+    max_zvol_ratio = zvol_cfg.get("max_zero_volume_ratio", 0.10)
+    exret_threshold = exret_cfg.get("single_day_threshold", 0.50)
+    max_exret_ratio = exret_cfg.get("max_extreme_ratio", None)
 
     end_date = pd.Timestamp(config.get("end_date", "2025-12-31"))
 
     # ── Coerce boolean flag columns (NaN → False avoids Python truthiness bug) ─
     for flag_col in ("stale_price_flag", "extreme_return_flag"):
-        df[flag_col] = pd.to_numeric(
-            df.get(flag_col, pd.Series(0, index=df.index)), errors="coerce"
-        ).fillna(0).astype(bool)
+        df[flag_col] = (
+            pd.to_numeric(
+                df.get(flag_col, pd.Series(0, index=df.index)), errors="coerce"
+            )
+            .fillna(0)
+            .astype(bool)
+        )
 
     # ── Identifier quality: flag tickers with no price link ──────────────────
     # (history_years is NaN when no price data was found for that ticker)
@@ -140,20 +166,17 @@ def apply_quality_filters(
     # ── Liquidity cutoff (computed on ETFs that pass all other hard filters) ──
     if explicit_liq is None:
         pre_liq_mask = (
-            ~no_price_mask
-        ) & (
-            df["history_years"].fillna(0) >= min_history
-        ) & (
-            df["missing_data_pct"].fillna(1) <= max_missing
-        ) & (
-            ~df["stale_price_flag"]
-        ) & (
-            df["days_since_last_price"].fillna(9999) <= max_days_inactive
-        ) & (
-            df["zero_volume_ratio"].fillna(1) <= max_zvol_ratio
+            (~no_price_mask)
+            & (df["history_years"].fillna(0) >= min_history)
+            & (df["missing_data_pct"].fillna(1) <= max_missing)
+            & (~df["stale_price_flag"])
+            & (df["days_since_last_price"].fillna(9999) <= max_days_inactive)
+            & (df["zero_volume_ratio"].fillna(1) <= max_zvol_ratio)
         )
         valid_vol = df.loc[pre_liq_mask, "recent_median_dollar_volume"].dropna()
-        liq_cutoff = float(valid_vol.quantile(pct_cutoff)) if len(valid_vol) > 0 else 0.0
+        liq_cutoff = (
+            float(valid_vol.quantile(pct_cutoff)) if len(valid_vol) > 0 else 0.0
+        )
     else:
         liq_cutoff = float(explicit_liq)
 
@@ -178,7 +201,7 @@ def apply_quality_filters(
         if pd.isna(row.get("history_years")):
             r.append("No price data found")
             reasons.append("; ".join(r))
-            continue   # skip metric-based filters — no data to evaluate
+            continue  # skip metric-based filters — no data to evaluate
 
         # Active ETF filter
         days_inactive = row.get("days_since_last_price", 0)
@@ -190,7 +213,10 @@ def apply_quality_filters(
             r.append("Insufficient price history")
 
         # Missing data filter
-        if pd.notna(row.get("missing_data_pct")) and row["missing_data_pct"] > max_missing:
+        if (
+            pd.notna(row.get("missing_data_pct"))
+            and row["missing_data_pct"] > max_missing
+        ):
             r.append("Too much missing data")
 
         # Stale price filter
@@ -198,7 +224,10 @@ def apply_quality_filters(
             r.append("Stale pricing pattern")
 
         # Zero-volume filter
-        if pd.notna(row.get("zero_volume_ratio")) and row["zero_volume_ratio"] > max_zvol_ratio:
+        if (
+            pd.notna(row.get("zero_volume_ratio"))
+            and row["zero_volume_ratio"] > max_zvol_ratio
+        ):
             r.append("Excessive zero-volume days")
 
         # Recent liquidity filter (use recent window, fall back to full-sample)
