@@ -1,7 +1,32 @@
-pandas
-numpy
-pyyaml
-wrds
-python-dotenv
-pytest
-tabulate
+# QF 623 Group Project — Python Dependencies
+# Install with: pip install -r requirements.txt
+# Tested on Python 3.11
+
+# ── Core data science ─────────────────────────────────────────────────────────
+pandas>=2.0
+numpy>=1.26
+scipy>=1.11
+
+# ── Parquet file support ──────────────────────────────────────────────────────
+pyarrow>=14.0          # preferred parquet engine (faster, better type support)
+fastparquet>=2023.10   # fallback parquet engine
+
+# ── WRDS data access ──────────────────────────────────────────────────────────
+wrds>=3.1              # Wharton Research Data Services Python client
+sqlalchemy>=2.0        # used internally by wrds for DB connections
+psycopg2-binary>=2.9   # PostgreSQL adapter (binary build avoids C compiler requirement)
+
+# ── Excel support ─────────────────────────────────────────────────────────────
+openpyxl>=3.1          # for reading .xlsx files (used in momentum_long_short_vincent.py)
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+jupyter>=1.0
+notebook>=7.0
+ipykernel>=6.0
+
+# ── Visualisation ─────────────────────────────────────────────────────────────
+matplotlib>=3.8
+seaborn>=0.13
+
+# ── Optional: notebook output stripping (recommended for clean git diffs) ─────
+# nbstripout>=0.7
